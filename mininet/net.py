@@ -103,7 +103,7 @@ from mininet.log import info, error, debug, output, warn
 from mininet.node import ( Node, Docker, Host, OVSKernelSwitch,
                            DefaultController, Controller, OVSSwitch, OVSBridge )
 from mininet.nodelib import NAT
-from mininet.link import Link, Intf
+from mininet.link import Link, Intf, VlanIntf
 from mininet.util import ( quietRun, fixLimits, numCores, ensureRoot,
                            macColonHex, ipStr, ipParse, netParse, ipAdd,
                            waitListening, BaseString )
@@ -1063,6 +1063,8 @@ class Containernet( Mininet ):
         """
         return self.removeHost(name, **params)
 
+    def addVlanInterface ( self, name, master, vid, node=None ):
+        return VlanIntf(name, master, vid, node)
 
     def addExtSAP(self, sapName, sapIP, dpid=None, **params):
         """

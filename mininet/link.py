@@ -25,7 +25,7 @@ Link: basic link class for creating veth pairs
 """
 
 from mininet.log import info, error, debug
-from mininet.util import makeIntfPair
+from mininet.util import makeIntfPair, makeVlanIntf
 import mininet.node
 import re
 
@@ -234,6 +234,17 @@ class Intf( object ):
     def __str__( self ):
         return self.name
 
+class VlanIntf ( Intf ):
+
+    def __init__( self, name, master, vid, node=None, port=None, link=None,
+                  mac=None, **params ):
+        
+        self.master = master
+        self.vid = vid
+
+        makeVlanIntf(name, vid, master, node1=node, deleteIntfs=True)
+
+        super().__init__(name, node=node, port=None, link=None, mac=None, **params )
 
 class TCIntf( Intf ):
     """Interface customized by tc (traffic control) utility

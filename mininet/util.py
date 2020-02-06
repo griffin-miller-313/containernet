@@ -248,6 +248,30 @@ def makeIntfPair( intf1, intf2, addr1=None, addr2=None, node1=None, node2=None,
     moveIntf(intf1, node1)
     moveIntf(intf2, node2)
 
+def makeVlanIntf( intf1, vid, master, addr1=None, node1=None, deleteIntfs=True, runCmd=None):
+    if deleteIntfs:
+        # Delete any old interfaces with the same names
+        quietRun( 'ip link del ' + intf1, shell=True )
+
+    # first: create the vlan intf in default namespace
+    cm = 'ip link add link %s name %s type vlan id %s ' % (  master, intf1, vid)
+    print(cm)
+    cmdOutput = quietRun( cm,
+                            shell=True )
+    if cmdOutput:
+        raise Exception( "Error creating vlan interface (%s): %s " %
+                         ( intf1, cmdOutput ) )
+
+    if addr1 is not None:
+        cmdOutput = quietRun( 'ip link add name %s '
+                              'type veth peer name %s ' %
+                              ( intf1, intf2 ),
+                              shell=True )
+        if cmdOutput:
+            raise Exception( "Error adding address to vlan interface (%s): %s " %
+                            ( intf1, cmdOutput ) )
+
+
 def retry( retries, delaySecs, fn, *args, **keywords ):
     """Try something several times before giving up.
        n: number of times to retry

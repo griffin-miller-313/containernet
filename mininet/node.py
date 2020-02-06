@@ -725,6 +725,7 @@ class Docker ( Host ):
         * updateCpuLimits(...)
         * updateMemoryLimits(...)
         """
+        print(build_params)
         self.dimage = dimage
         self.dnameprefix = "mn"
         self.dcmd = dcmd if dcmd is not None else "/bin/bash"
@@ -796,7 +797,7 @@ class Docker ( Host ):
             info(output)
 
         # pull image if it does not exist
-        self._check_image_exists(dimage, True, _id=None)
+        self._check_image_exists(dimage, True, _id=dimage)
 
         # for DEBUG
         debug("Created docker container object %s\n" % name)
@@ -855,6 +856,11 @@ class Docker ( Host ):
         # fetch information about new container
         self.dcinfo = self.dcli.inspect_container(self.dc)
         self.did = self.dcinfo.get("Id")
+        self.dpid = self.dcinfo["State"]["Pid"]
+
+        # create namespace for container
+        os.symlink(f"/proc/{self.dpid}/ns/net", f"/var/run/netns/{name}")
+        self.namespace = name
 
         # call original Node.__init__
         Host.__init__(self, name, **kwargs)
@@ -1232,6 +1238,32 @@ class Docker ( Host ):
         except:
             error("Problem reading cgroup info: %r\n" % cmd)
             return -1
+
+    def cleanup( self ):
+        "Help python collect its garbage."
+        # We used to do this, but it slows us down:
+        # Intfs may end up in root NS
+        # for intfName in self.intfNames():
+        # if self.name in intfName:
+        # quietRun( 'ip link del ' + intfName )
+        if self.shell:
+            # Close ptys
+            self.stdin.close()
+            # os.close(self.slave)
+            if self.waitExited:
+                debug( 'waiting for', self.pid, 'to terminate\n' )
+                self.shell.wait()
+        self.shell = None
+        if self.master:
+            self.stdin.close()
+            self.master = None
+            self.stdin = None
+            self.stdout = None
+        if self.slave:
+            os.close(self.slave)
+            self.slave = None
+        
+        os.remove(f'/var/run/netns/{self.namespace}')
 
 
 class CPULimitedHost( Host ):
